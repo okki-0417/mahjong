@@ -12,8 +12,6 @@ import (
 	"github.com/okki-0417/mahjong/winning"
 )
 
-const pendingKyoku = "Kyoku の移植後に書く"
-
 func labels(tiles []tile.Tile) string {
 	return strings.Join(tile.Labels(tiles), " ")
 }

@@ -56,10 +56,10 @@ func MustWall(tiles []tile.Tile) Wall {
 	return w
 }
 
-// ShuffledWall shuffles the full set (with red fives) using r, or the
-// package-level random source when r is nil.
-func ShuffledWall(r *rand.Rand) Wall {
-	tiles := tile.FullSet(true)
+// ShuffledWall shuffles the full set using r, or the package-level random
+// source when r is nil. With red, one five of each numeric suit is red.
+func ShuffledWall(r *rand.Rand, red bool) Wall {
+	tiles := tile.FullSet(red)
 	shuffle := rand.Shuffle
 	if r != nil {
 		shuffle = r.Shuffle
@@ -73,9 +73,9 @@ func (w Wall) Tiles() []tile.Tile {
 	return append([]tile.Tile(nil), w.tiles...)
 }
 
-// hands deals: four tiles at a time for three rounds from the dealer on,
+// Hands deals: four tiles at a time for three rounds from the dealer on,
 // then one each. Row 0 is the dealer's hand.
-func (w Wall) hands() [Seats][]tile.Tile {
+func (w Wall) Hands() [Seats][]tile.Tile {
 	var dealt [Seats][]tile.Tile
 	pos := 0
 	for round := 0; round < chunkRounds; round++ {
@@ -91,10 +91,12 @@ func (w Wall) hands() [Seats][]tile.Tile {
 	return dealt
 }
 
-func (w Wall) drawTiles() []tile.Tile {
+// DrawTiles returns the 70 tiles that become the live wall.
+func (w Wall) DrawTiles() []tile.Tile {
 	return append([]tile.Tile(nil), w.tiles[Seats*handSize:wallSize-deadSize]...)
 }
 
-func (w Wall) deadTiles() []tile.Tile {
+// DeadTiles returns the 14 tiles that become the dead wall.
+func (w Wall) DeadTiles() []tile.Tile {
 	return append([]tile.Tile(nil), w.tiles[wallSize-deadSize:]...)
 }

@@ -54,7 +54,7 @@ type Kyoku struct {
 
 // Deal starts a kyoku from a setup, folding any recorded actions.
 func Deal(s Setup) (*Kyoku, error) {
-	wall := ShuffledWall(nil)
+	wall := ShuffledWall(nil, true)
 	if s.Wall != nil {
 		wall = *s.Wall
 	}

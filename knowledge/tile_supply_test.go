@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/okki-0417/mahjong/kyoku"
 	mt "github.com/okki-0417/mahjong/mahjongtest"
 	"github.com/okki-0417/mahjong/tile"
 )
@@ -16,12 +17,42 @@ func TestTileSupply(t *testing.T) {
 		return tile.MustSupply(mt.Tiles(seen))
 	}
 
+	// 席0が 1m を切り、席2が 1m をポンして 9p を切ったところ。
+	board := mt.BuildKyoku(mt.KyokuSpec{
+		Hands: map[int]string{
+			0: "1m 2m 3m 4m 5m 6m 7p 8p 9p 1s 2s 3s 4s", 2: "1m 1m 3p 4p 5p 6p 7p 8p 9p 1s 5s 6s 7s",
+			1: "2s 3s 4s 6s 7s 8s 2p 3p 4p 5p 6p 7p 8p",
+		},
+		Draws: "5z", Dora: "6z",
+		Actions: []kyoku.Action{mt.DiscardAction(0, "1m"), mt.PonAction(2, "1m", "1m 1m"), mt.DiscardAction(2, "9p")},
+	}).Kyokumen()
+
 	t.Run("見えている牌", func(t *testing.T) {
-		t.Run("自分の手牌が見えている牌に数えられること", func(t *testing.T) { t.Skip(pendingKyoku) })
-		t.Run("他家の副露が見えている牌に数えられること", func(t *testing.T) { t.Skip(pendingKyoku) })
-		t.Run("河に捨てられた牌が見えている牌に数えられること", func(t *testing.T) { t.Skip(pendingKyoku) })
-		t.Run("公開されているドラ表示牌が見えている牌に数えられること", func(t *testing.T) { t.Skip(pendingKyoku) })
-		t.Run("誰の手にも河にも現れていない牌は見えていないこと", func(t *testing.T) { t.Skip(pendingKyoku) })
+		t.Run("自分の手牌が見えている牌に数えられること", func(t *testing.T) {
+			if board.TileSupply(1).Remaining(board.Seat(1).Hand().ClosedTiles()[0]) >= tile.CopiesPerKind {
+				t.Fatal("own hand not counted")
+			}
+		})
+		t.Run("他家の副露が見えている牌に数えられること", func(t *testing.T) {
+			if board.TileSupply(1).Remaining(mt.T("1m")) != 1 {
+				t.Fatal("meld not counted")
+			}
+		})
+		t.Run("河に捨てられた牌が見えている牌に数えられること", func(t *testing.T) {
+			if board.TileSupply(1).Remaining(mt.T("9p")) >= tile.CopiesPerKind {
+				t.Fatal("river not counted")
+			}
+		})
+		t.Run("公開されているドラ表示牌が見えている牌に数えられること", func(t *testing.T) {
+			if board.TileSupply(1).Remaining(mt.T("6z")) != tile.CopiesPerKind-1 {
+				t.Fatal("indicator not counted")
+			}
+		})
+		t.Run("誰の手にも河にも現れていない牌は見えていないこと", func(t *testing.T) {
+			if board.TileSupply(1).Remaining(mt.T("7z")) != tile.CopiesPerKind {
+				t.Fatal("unseen tile counted")
+			}
+		})
 	})
 
 	t.Run("牌の残り枚数", func(t *testing.T) {
@@ -77,7 +108,11 @@ func TestTileSupply(t *testing.T) {
 				t.Fatalf("err = %v", err)
 			}
 		})
-		t.Run("同じ牌が5枚見えている局面は作れないこと", func(t *testing.T) { t.Skip(pendingKyoku) })
+		t.Run("同じ牌が5枚見えている局面は作れないこと", func(t *testing.T) {
+			if _, err := mt.TryBuildKyoku(mt.KyokuSpec{Hands: map[int]string{0: "1m 1m 1m 1m 1m 2m 3m 4m 5m 6m 7m 8m 9m"}}); err == nil {
+				t.Fatal("built")
+			}
+		})
 	})
 }
 
@@ -150,8 +185,32 @@ func TestDora(t *testing.T) {
 	})
 
 	t.Run("加点", func(t *testing.T) {
-		t.Run("ドラは翻数に加算すること", func(t *testing.T) { t.Skip(pendingKyoku) })
-		t.Run("リーチしていない和了では裏ドラを数えないこと", func(t *testing.T) { t.Skip(pendingKyoku) })
-		t.Run("リーチした和了では裏ドラも数えること", func(t *testing.T) { t.Skip(pendingKyoku) })
+		// 表示牌 4s のドラは 5s。親の一通は和了牌を含めて 5s を2枚使う。
+		settle := func(t *testing.T, dora, uradora string, riichiFirst bool) *kyoku.Result {
+			t.Helper()
+			spec := mt.KyokuSpec{Hands: map[int]string{0: "1m 2m 3m 4m 5m 6m 7m 8m 9m 1p 2p 3p 5s"}, Draws: "5s", Dora: dora, Uradora: uradora}
+			if riichiFirst {
+				spec.Draws = "9s 1z 1z 1z 5s"
+				spec.Actions = []kyoku.Action{mt.RiichiAction(0, "9s"), mt.DiscardAction(1, "1z"), mt.DiscardAction(2, "1z"), mt.DiscardAction(3, "1z")}
+			}
+			spec.Actions = append(spec.Actions, kyoku.NewTsumo(0))
+			return resultOf(t, mt.BuildKyoku(spec))
+		}
+
+		t.Run("ドラは翻数に加算すること", func(t *testing.T) {
+			if settle(t, "4s", "", false).Deltas()[0] <= settle(t, "7z", "", false).Deltas()[0] {
+				t.Fatal("dora not counted")
+			}
+		})
+		t.Run("リーチしていない和了では裏ドラを数えないこと", func(t *testing.T) {
+			if settle(t, "7z", "4s", false).Deltas()[0] != settle(t, "7z", "6z", false).Deltas()[0] {
+				t.Fatal("uradora counted")
+			}
+		})
+		t.Run("リーチした和了では裏ドラも数えること", func(t *testing.T) {
+			if settle(t, "7z", "4s", true).Deltas()[0] <= settle(t, "7z", "6z", true).Deltas()[0] {
+				t.Fatal("uradora not counted")
+			}
+		})
 	})
 }

@@ -61,13 +61,13 @@ type Kyokumen struct {
 }
 
 func dealKyokumen(w Wall, dealerSeat int, roundWind tile.Wind, scores [Seats]int, kyokuNumber, honba, riichiSticks int, rules ruleset.RuleSet) Kyokumen {
-	hands := w.hands()
+	hands := w.Hands()
 	var seats [Seats]SeatState
 	for i := 0; i < Seats; i++ {
 		seats[i] = SeatState{hand: hand.Must(hands[(i-dealerSeat+Seats)%Seats], nil), score: scores[i]}
 	}
 	return Kyokumen{
-		live: liveWall{tiles: w.drawTiles()}, dead: newDeadWall(w.deadTiles()), seats: seats,
+		live: liveWall{tiles: w.DrawTiles()}, dead: newDeadWall(w.DeadTiles()), seats: seats,
 		dealerSeat: dealerSeat, roundWind: roundWind, kyokuNumber: kyokuNumber,
 		honba: honba, riichiSticks: riichiSticks, junme: 1, rules: rules,
 	}

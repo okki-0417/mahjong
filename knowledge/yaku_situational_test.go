@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/okki-0417/mahjong/hand"
+	"github.com/okki-0417/mahjong/kyoku"
 	mt "github.com/okki-0417/mahjong/mahjongtest"
 	"github.com/okki-0417/mahjong/ruleset"
 	"github.com/okki-0417/mahjong/tile"
@@ -34,7 +35,20 @@ func TestSituationalYaku(t *testing.T) {
 				t.Fatalf("got %d", got)
 			}
 		})
-		t.Run("副露しているとき宣言できないこと", func(t *testing.T) { t.Skip(pendingKyoku) })
+		t.Run("副露しているとき宣言できないこと", func(t *testing.T) {
+			// 席1が 2p をポンし、一巡回って自分のツモ番に戻ってきた局面。
+			board := mt.BuildKyoku(mt.KyokuSpec{
+				Hands: map[int]string{1: "3m 4m 5m 6m 7m 8m 1s 2s 3s 9s 2p 2p 1z"},
+				Draws: "2p 1z 1z 1z 5z",
+				Actions: []kyoku.Action{
+					mt.DiscardAction(0, "2p"), mt.PonAction(1, "2p", "2p 2p"),
+					mt.DiscardAction(1, "1z"), mt.DiscardAction(2, "1z"), mt.DiscardAction(3, "1z"), mt.DiscardAction(0, "1z"),
+				},
+			}).Kyokumen()
+			if hasKind(kindsOf(board, -1), kyoku.ActionRiichi) {
+				t.Fatal("riichi offered")
+			}
+		})
 	})
 
 	t.Run("ダブル立直（ダブルリーチ）", func(t *testing.T) {
@@ -61,7 +75,22 @@ func TestSituationalYaku(t *testing.T) {
 				t.Fatalf("err = %v", err)
 			}
 		})
-		t.Run("立直後に他家の鳴きが入ると消えること", func(t *testing.T) { t.Skip(pendingKyoku) })
+		t.Run("立直後に他家の鳴きが入ると消えること", func(t *testing.T) {
+			k := mt.BuildKyoku(mt.KyokuSpec{
+				Hands: map[int]string{0: ittsuTenpai, 1: "9s 9s 5s 1z 2z 4p 5p 6p 7p 8p 1s 2s 3s"},
+				Draws: "9s",
+				Actions: []kyoku.Action{
+					mt.RiichiAction(0, "9s"),
+					mt.PonAction(1, "9s", "9s 9s"), mt.DiscardAction(1, "5s"),
+					kyoku.NewRon(0),
+				},
+			})
+			score, _ := resultOf(t, k).Score()
+			names := yakuNamesOf(score)
+			if !has(names, "ダブル立直") || has(names, "一発") {
+				t.Fatalf("got %v", names)
+			}
+		})
 	})
 
 	t.Run("門前清自摸和（メンゼンツモ）", func(t *testing.T) {
@@ -109,6 +138,24 @@ func TestSituationalYaku(t *testing.T) {
 				t.Fatalf("got %d", got)
 			}
 		})
-		t.Run("加槓を横取りした和了に、局面から槍槓が付くこと", func(t *testing.T) { t.Skip(pendingKyoku) })
+		t.Run("加槓を横取りした和了に、局面から槍槓が付くこと", func(t *testing.T) {
+			k := mt.BuildKyoku(mt.KyokuSpec{
+				Hands: map[int]string{
+					0: "3m 3m 1p 2p 3p 4p 5p 6p 7p 8p 9p 5s 5s",
+					2: "1m 2m 4m 5m 6m 7m 8m 9m 1p 2p 3p 9s 9s",
+				},
+				Draws: "9s 3m 1z 2z 3z 3m",
+				Actions: []kyoku.Action{
+					mt.DiscardAction(0, "9s"), mt.DiscardAction(1, "3m"),
+					mt.PonAction(0, "3m", "3m 3m"), mt.DiscardAction(0, "5s"),
+					mt.DiscardAction(1, "1z"), mt.DiscardAction(2, "2z"), mt.DiscardAction(3, "3z"),
+					mt.KakanAction(0, "3m"), kyoku.NewRon(2),
+				},
+			})
+			score, _ := resultOf(t, k).Score()
+			if !has(yakuNamesOf(score), "槍槓") {
+				t.Fatalf("got %v", yakuNamesOf(score))
+			}
+		})
 	})
 }
