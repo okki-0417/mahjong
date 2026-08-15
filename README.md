@@ -87,6 +87,11 @@ curl -s localhost:8080/v1/shanten -d '{"closed_tiles":["1m","2m","3m","4m","5m",
 | `POST /v1/discard-analysis` | a drawn hand (14 − 3N tiles) | every discard by shanten and ukeire |
 | `POST /v1/simulator/step` | wall, setup, rules, `actions`, `user_seat`, `action` | replays, takes the human's action, plays the CPU seats, returns the human's sight |
 
+Errors are `{"error": "<message>", "code": "<code>"}`: 400 for malformed
+input, 422 for input the rules reject. `code` is stable (`invalid_tile`,
+`no_yaku`, `illegal_action`, …; see `internal/mahjongd/errcode.go`) so
+clients can localize without parsing the message.
+
 The Dockerfile builds a static image for deployment.
 
 ## Testing

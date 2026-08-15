@@ -52,6 +52,11 @@ func logged(logger *slog.Logger, next http.Handler) http.Handler {
 
 type errorResponse struct {
 	Error string `json:"error"`
+	Code  string `json:"code"`
+}
+
+func errorResponseOf(err error) errorResponse {
+	return errorResponse{Error: err.Error(), Code: errorCode(err)}
 }
 
 // handle wraps an endpoint: it reads JSON, runs it, and maps errors to
@@ -60,7 +65,7 @@ func handle[Req any, Res any](endpoint func(Req) (Res, error)) http.HandlerFunc 
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req Req
 		if err := decode(r, &req); err != nil {
-			writeJSON(w, http.StatusBadRequest, errorResponse{Error: err.Error()})
+			writeJSON(w, http.StatusBadRequest, errorResponseOf(err))
 			return
 		}
 		res, err := endpoint(req)
@@ -69,7 +74,7 @@ func handle[Req any, Res any](endpoint func(Req) (Res, error)) http.HandlerFunc 
 			if errors.Is(err, errBadRequest) {
 				status = http.StatusBadRequest
 			}
-			writeJSON(w, status, errorResponse{Error: err.Error()})
+			writeJSON(w, status, errorResponseOf(err))
 			return
 		}
 		writeJSON(w, http.StatusOK, res)

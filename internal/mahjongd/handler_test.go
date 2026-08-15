@@ -53,14 +53,14 @@ func TestShanten(t *testing.T) {
 	})
 	t.Run("rejects a bad tile with 422", func(t *testing.T) {
 		status, v := post(t, h, "/v1/shanten", `{"closed_tiles":["9z"]}`)
-		if status != 422 || v["error"] == nil {
+		if status != 422 || v["error"] == nil || v["code"] != "invalid_tile" {
 			t.Fatalf("%d %v", status, v)
 		}
 	})
 	t.Run("rejects malformed JSON with 400", func(t *testing.T) {
-		status, _ := post(t, h, "/v1/shanten", `{`)
-		if status != 400 {
-			t.Fatalf("%d", status)
+		status, v := post(t, h, "/v1/shanten", `{`)
+		if status != 400 || v["code"] != "bad_request" {
+			t.Fatalf("%d %v", status, v)
 		}
 	})
 	t.Run("rejects the wrong tile count with 422", func(t *testing.T) {
@@ -127,7 +127,7 @@ func TestFuAndScore(t *testing.T) {
 	})
 	t.Run("a hand without yaku is 422", func(t *testing.T) {
 		status, v := post(t, h, "/v1/score", `{"closed_tiles":["1p","2p","3p","4p","5p","6p","7s","8s","9s","2z"],"open_melds":[{"kind":"chi","tiles":["1m","2m","3m"]}],"winning_tile":"2z","win_kind":"ron","round_wind":"east","seat_wind":"south"}`)
-		if status != 422 || v["error"] == nil {
+		if status != 422 || v["error"] == nil || v["code"] != "no_yaku" {
 			t.Fatalf("%d %v", status, v)
 		}
 	})
@@ -217,7 +217,7 @@ func TestSimulatorStep(t *testing.T) {
 
 	t.Run("rejects another seat's action with 422", func(t *testing.T) {
 		status, v := post(t, h, "/v1/simulator/step", `{"user_seat":0,"action":{"seat":1,"kind":"pass","tiles":[]}}`)
-		if status != 422 || v["error"] == nil {
+		if status != 422 || v["error"] == nil || v["code"] != "illegal_action" {
 			t.Fatalf("%d %v", status, v)
 		}
 	})
