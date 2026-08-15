@@ -357,3 +357,21 @@ func ParseAll(labels []string) ([]Tile, error) {
 	}
 	return out, nil
 }
+
+// MarshalText renders the label, so tiles serialize as JSON strings.
+func (t Tile) MarshalText() ([]byte, error) {
+	if !t.IsValid() {
+		return nil, fmt.Errorf("%w: %v", ErrInvalidLabel, t)
+	}
+	return []byte(t.String()), nil
+}
+
+// UnmarshalText parses a label.
+func (t *Tile) UnmarshalText(text []byte) error {
+	parsed, err := Parse(string(text))
+	if err != nil {
+		return err
+	}
+	*t = parsed
+	return nil
+}

@@ -55,7 +55,7 @@ func Each[T any](t *testing.T, name string, fn func(line int, record T)) {
 	defer func() { _ = f.Close() }()
 
 	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 1<<20), 1<<20)
+	scanner.Buffer(make([]byte, 1<<20), 64<<20)
 	line := 0
 	for scanner.Scan() {
 		line++

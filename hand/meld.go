@@ -1,6 +1,7 @@
 package hand
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -175,4 +176,32 @@ func (m Meld) IsKan() bool {
 // String renders the meld as kind and tile labels, e.g. "pon[1z 1z 1z]".
 func (m Meld) String() string {
 	return fmt.Sprintf("%v%v", m.kind, m.Tiles())
+}
+
+type meldJSON struct {
+	Kind  string      `json:"kind"`
+	Tiles []tile.Tile `json:"tiles"`
+}
+
+// MarshalJSON renders {"kind": "pon", "tiles": ["1z", "1z", "1z"]}.
+func (m Meld) MarshalJSON() ([]byte, error) {
+	return json.Marshal(meldJSON{Kind: m.kind.String(), Tiles: m.Tiles()})
+}
+
+// UnmarshalJSON reads the form MarshalJSON writes and validates the meld.
+func (m *Meld) UnmarshalJSON(data []byte) error {
+	var j meldJSON
+	if err := json.Unmarshal(data, &j); err != nil {
+		return err
+	}
+	kind, err := ParseMeldKind(j.Kind)
+	if err != nil {
+		return err
+	}
+	parsed, err := NewMeld(kind, j.Tiles)
+	if err != nil {
+		return err
+	}
+	*m = parsed
+	return nil
 }
