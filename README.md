@@ -4,10 +4,9 @@ A riichi mahjong rules engine in Go: tiles, hands, shanten, ukeire, yaku, fu,
 scoring, and the progression of a kyoku. Pure Go, no dependencies outside the
 standard library.
 
-> **Status:** early port in progress. The API is not stable until v1.0.0.
-> Ported so far: `tile`, `hand` (melds, shanten, waits), `winning` (forms,
-> every yaku, fu, score), `ukeire`, `ruleset`.
-> Coming: `kyoku` (game progression), `cpu`, and the `mahjongd` HTTP server.
+> **Status:** the port from the Ruby original is complete and verified
+> against it (golden fixtures under `testdata/`). The API is not stable
+> until v1.0.0.
 
 ## Install
 
@@ -61,8 +60,33 @@ haku, hatsu, chun.
 | `winning` | A win: readings of the hand, yaku, fu, score, and payments |
 | `ukeire` | The improving tiles of a hand and how many remain unseen |
 | `ruleset` | Table rules: kuitan, round-up mangan, nagashi mangan, starting score |
+| `kyoku` | One deal: the wall, every legal action, claims, results, and the next deal |
+| `cpu` | A computer player choosing from what its seat can see |
+| `mahjongd` | HTTP handlers for the engine; `cmd/mahjongd` serves them |
 | `mahjongtest` | Helpers that build tiles, melds, and hands from labels in tests |
 | `knowledge` | Domain knowledge tests: the rules written as a specification |
+
+## Server
+
+`mahjongd` serves the engine as stateless JSON endpoints:
+
+```sh
+go run ./cmd/mahjongd -addr :8080
+curl -s localhost:8080/v1/shanten -d '{"closed_tiles":["1m","2m","3m","4m","5m","6m","7m","8m","9m","1p","2p","4p","5s"]}'
+# {"shanten":1}
+```
+
+| Endpoint | Body | Answers |
+| --- | --- | --- |
+| `POST /v1/shanten` | `closed_tiles`, `open_melds` | shanten |
+| `POST /v1/ukeire` | same | shanten and the improving tiles with counts |
+| `POST /v1/waits` | same | waits with their kinds (tenpai) or ukeire |
+| `POST /v1/fu` | hand + `winning_tile`, `win_kind`, winds | fu breakdown and the reading |
+| `POST /v1/score` | fu body + situation flags, `dora_count`, `round_up_mangan` | yaku, han, fu, payments |
+| `POST /v1/discard-analysis` | a drawn hand (14 − 3N tiles) | every discard by shanten and ukeire |
+| `POST /v1/simulator/step` | wall, setup, rules, `actions`, `user_seat`, `action` | replays, takes the human's action, plays the CPU seats, returns the human's sight |
+
+The Dockerfile builds a static image for deployment.
 
 ## Testing
 
