@@ -3,49 +3,12 @@ package knowledge_test
 import (
 	"errors"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/okki-0417/mahjong/hand"
 	mt "github.com/okki-0417/mahjong/mahjongtest"
 	"github.com/okki-0417/mahjong/tile"
 )
-
-func labels(tiles []tile.Tile) string {
-	return strings.Join(tile.Labels(tiles), " ")
-}
-
-func meldKinds(h hand.Hand) []hand.MeldKind {
-	out := make([]hand.MeldKind, 0, len(h.Melds()))
-	for _, m := range h.Melds() {
-		out = append(out, m.Kind())
-	}
-	return out
-}
-
-func must(t *testing.T) func(hand.Hand, error) hand.Hand {
-	return func(h hand.Hand, err error) hand.Hand {
-		t.Helper()
-		if err != nil {
-			t.Fatal(err)
-		}
-		return h
-	}
-}
-
-func lastParamIsTile(fn any, numIn int) bool {
-	typ := reflect.TypeOf(fn)
-	return typ.NumIn() == numIn && typ.In(numIn-1) == reflect.TypeOf(tile.Tile(0))
-}
-
-func contains(tiles []tile.Tile, x tile.Tile) bool {
-	for _, t := range tiles {
-		if t == x {
-			return true
-		}
-	}
-	return false
-}
 
 // 手牌。closed(手の内の牌) と melds(副露) を所有する。
 // 副露は手牌の枠を3枚消費するので、副露が増えるほど手の内は減る。
