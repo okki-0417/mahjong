@@ -62,13 +62,14 @@ haku, hatsu, chun.
 | `ruleset` | Table rules: kuitan, round-up mangan, nagashi mangan, starting score |
 | `kyoku` | One deal: the wall, every legal action, claims, results, and the next deal |
 | `cpu` | A computer player choosing from what its seat can see |
-| `mahjongd` | HTTP handlers for the engine; `cmd/mahjongd` serves them |
 | `mahjongtest` | Helpers that build tiles, melds, and hands from labels in tests |
 | `knowledge` | Domain knowledge tests: the rules written as a specification |
 
 ## Server
 
-`mahjongd` serves the engine as stateless JSON endpoints:
+`cmd/mahjongd` serves the engine as stateless JSON endpoints (the handlers
+live in `internal/mahjongd`; they are a delivery layer, not part of the
+library API):
 
 ```sh
 go run ./cmd/mahjongd -addr :8080

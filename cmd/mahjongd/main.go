@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/okki-0417/mahjong/mahjongd"
+	"github.com/okki-0417/mahjong/internal/mahjongd"
 )
 
 func main() {

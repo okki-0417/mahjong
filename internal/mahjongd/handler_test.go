@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/okki-0417/mahjong/mahjongd"
+	"github.com/okki-0417/mahjong/internal/mahjongd"
 )
 
 func post(t *testing.T, h http.Handler, path, body string) (int, map[string]any) {
