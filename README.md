@@ -5,9 +5,9 @@ scoring, and the progression of a kyoku. Pure Go, no dependencies outside the
 standard library.
 
 > **Status:** early port in progress. The API is not stable until v1.0.0.
-> Ported so far: `tile`, `hand` (melds, shanten, waits).
-> Coming: `winning` (yaku / fu / score), `ruleset`, `kyoku`, `cpu`, and the
-> `mahjongd` HTTP server.
+> Ported so far: `tile`, `hand` (melds, shanten, waits), `winning` (forms,
+> every yaku, fu, score), `ukeire`, `ruleset`.
+> Coming: `kyoku` (game progression), `cpu`, and the `mahjongd` HTTP server.
 
 ## Install
 
@@ -24,7 +24,9 @@ import (
 	"fmt"
 
 	"github.com/okki-0417/mahjong/hand"
+	"github.com/okki-0417/mahjong/ruleset"
 	"github.com/okki-0417/mahjong/tile"
+	"github.com/okki-0417/mahjong/winning"
 )
 
 func main() {
@@ -35,8 +37,14 @@ func main() {
 	fmt.Println(h.IsTenpai()) // true
 	fmt.Println(h.Waits())    // [1z 2z]
 
-	after, _ := h.Discard(tile.East, tile.Chun)
-	fmt.Println(after.Shanten()) // 1
+	w, _ := winning.New(h, tile.East, winning.Situation{
+		WinKind: winning.Ron, RoundWind: tile.EastWind, SeatWind: tile.SouthWind, Riichi: true,
+	}, ruleset.Default())
+	score := w.Score(0)
+	fmt.Println(score.Han(), score.Fu(), score.Total()) // 2 40 2600
+	for _, y := range score.Yakus() {
+		fmt.Println(y.ID, y.Han) // riichi 1, yakuhai_round_wind 1
+	}
 }
 ```
 
@@ -50,6 +58,9 @@ haku, hatsu, chun.
 | --- | --- |
 | `tile` | The 34 kinds plus red fives; suit, number, honor / terminal, dora |
 | `hand` | A player's hand: concealed tiles, melds, calls, shanten, waits |
+| `winning` | A win: readings of the hand, yaku, fu, score, and payments |
+| `ukeire` | The improving tiles of a hand and how many remain unseen |
+| `ruleset` | Table rules: kuitan, round-up mangan, nagashi mangan, starting score |
 | `mahjongtest` | Helpers that build tiles, melds, and hands from labels in tests |
 | `knowledge` | Domain knowledge tests: the rules written as a specification |
 
